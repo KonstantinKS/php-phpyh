@@ -1,6 +1,6 @@
 ARG PHP_VERSION=8.5
 
-FROM php:${PHP_VERSION}-cli-bookworm
+FROM php:${PHP_VERSION}-cli-alpine
 
 ENV UID=10001
 ENV GID=10001
@@ -9,10 +9,9 @@ ENV LC_ALL=C.UTF-8
 
 RUN <<EOF
     set -eux
-    groupadd --gid=${GID} dev
-    useradd --uid=${UID} --gid=${GID} --create-home dev
-    apt-get update
-    apt-get install --no-install-recommends --no-install-suggests -q --yes \
+    addgroup -g ${GID} dev
+    adduser -u ${UID} -G dev -D dev
+    apk add --no-cache \
         git \
         unzip
     (curl -sSLf https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o - || echo 'return 1') | sh -s \
@@ -26,7 +25,6 @@ RUN <<EOF
         intl \
         uv \
         pcov
-    apt-get purge -q --yes $(echo "${PHPIZE_DEPS}" | sed 's/\bmake\b//')
     ln -s /usr/local/bin/composer /usr/local/bin/c
     mkdir /composer
     chown dev:dev /composer
