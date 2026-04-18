@@ -7,10 +7,10 @@ ARG GID=10001
 
 ENV LC_ALL=C.UTF-8
 
-ENV COMPOSER_HOME=/home/dev/.composer
+ENV COMPOSER_HOME=/composer
 ENV PATH="${COMPOSER_HOME}/vendor/bin:${PATH}"
 
-ARG XDEBUG_LOG=/home/dev/xdebug.log
+ARG XDEBUG_LOG=/xdebug.log
 
 RUN <<EOF
     set -eux
