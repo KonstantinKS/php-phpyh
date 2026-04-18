@@ -2,15 +2,14 @@ ARG PHP_VERSION=8.5
 
 FROM php:${PHP_VERSION}-cli-alpine
 
-ENV LC_ALL=C.UTF-8
+ARG UID=10001
+ARG GID=10001
+ARG COMPOSER_DIR=/home/dev/.composer
 
-ENV UID=10001
-ENV GID=10001
+ENV LC_ALL=C.UTF-8
 
 RUN <<EOF
     set -eux
-    addgroup -g ${GID} dev
-    adduser -u ${UID} -G dev -D dev
     apk add --no-cache \
         make \
         git \
@@ -25,10 +24,16 @@ RUN <<EOF
         bcmath \
         pgsql \
         pdo_pgsql \
-        pcov
+        xdebug
     ln -s /usr/local/bin/composer /usr/local/bin/c
-    mkdir /composer
-    chown dev:dev /composer
+    echo 'xdebug.client_host=host.docker.internal' >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+    echo 'xdebug.log=/home/dev/xdebug.log' >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+
+    addgroup -g ${GID} dev
+    adduser -u ${UID} -G dev -D dev
+
+    mkdir ${COMPOSER_DIR}
+    chown dev:dev ${COMPOSER_DIR}
 EOF
 
 USER dev
@@ -40,11 +45,7 @@ RUN <<EOF
     git config --global core.excludesFile '/home/dev/.gitignore'
 EOF
 
-ENV COMPOSER_HOME=/composer
-ENV COMPOSER_CACHE_DIR=/composer/cache
-ENV PATH="/composer/vendor/bin:${PATH}"
-
-RUN --mount=type=cache,target=/composer/cache,uid=${UID},gid=${GID} <<EOF
+RUN --mount=type=cache,target=${COMPOSER_DIR}/cache,uid=${UID},gid=${GID} <<EOF
     set -eux
     composer global config allow-plugins.infection/extension-installer false
     composer global config allow-plugins.ergebnis/composer-normalize true
@@ -59,3 +60,5 @@ RUN --mount=type=cache,target=/composer/cache,uid=${UID},gid=${GID} <<EOF
         ergebnis/composer-normalize \
         infection/infection
 EOF
+
+ENV PATH="${COMPOSER_DIR}/vendor/bin:${PATH}"
